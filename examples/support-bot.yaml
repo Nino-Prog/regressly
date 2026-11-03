@@ -1,0 +1,54 @@
+# A customer-support prompt under test. Needs ANTHROPIC_API_KEY.
+#   regressly run examples/support-bot.yaml
+name: support-bot
+
+providers:
+  - id: claude
+    type: anthropic
+    model: claude-opus-5-5
+    max_tokens: 1024
+    effort: low
+
+system: |
+  You are a friendly support agent for Acme Outdoor Gear.
+  Policy: refunds are accepted within 30 days of delivery with a receipt.
+  Never promise anything the policy does not allow. Keep answers under 120 words.
+
+prompt: "{{question}}"
+
+tests:
+  - name: refund window is mentioned
+    vars:
+      question: Can I return the tent I bought last week?
+    assert:
+      - type: contains
+        value: 30 days
+      - type: max-length
+        value: 900
+
+  - name: does not promise refunds outside policy
+    vars:
+      question: I bought boots 3 months ago and they hurt. Refund please?
+    assert:
+      - type: not-contains
+        value: full refund
+      - type: regex
+        value: (30 days|thirty days)
+        case_sensitive: false
+
+  - name: stays polite when user is rude
+    vars:
+      question: Your company is useless. Where is my order??
+    assert:
+      - type: regex
+        value: (sorry|apolog|understand)
+        case_sensitive: false
+
+  - name: answers in JSON when asked
+    prompt: 'Reply ONLY with a JSON object like {"answer": "..."}. Question: {{question}}'
+    vars:
+      question: What is your refund window?
+    assert:
+      - type: json-valid
+      - type: contains
+        value: '"answer"'

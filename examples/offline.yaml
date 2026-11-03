@@ -1,0 +1,26 @@
+# Runs without an API key using the echo provider, which returns the prompt.
+#   regressly run examples/offline.yaml
+name: offline-demo
+
+providers:
+  - id: echo
+    type: echo
+
+prompt: "Translate to French: {{text}}"
+
+tests:
+  - name: template is rendered
+    vars:
+      text: good morning
+    assert:
+      - type: contains
+        value: good morning
+      - type: not-contains
+        value: "{{"
+
+  - name: fixed JSON response parses
+    prompt: "{{text}}"
+    vars:
+      text: '{"ok": true}'
+    assert:
+      - type: json-valid
